@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messenger: @Rekz Banz</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background-color: #19124e;
+      color: #fefeff;
+    }
+    h1 { color: #fefeff; }
+    button {
+      padding: 15px 30px;
+      font-size: 20px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    button:hover { background-color: #0056b3; }
+    button:disabled { background-color: #ccc; cursor: default; }
+    .question { margin-bottom: 25px; }
+    .correct { color: #00ff88; font-weight: bold; }
+    .wrong { color: #ff5577; font-weight: bold; }
+    .highlight { margin-top: 10px; }
+    input[type="radio"] { transform: scale(1.5); margin-right: 10px; }
+    #finishBtn { font-size: 2em; padding: .1em 1em; }
+    .nav-buttons { margin-top: 20px; display: flex; gap: 10px; }
+
+    #codeInput {
+      font-size: 15px;
+      padding: 10px 20px;
+      width: 300px;
+      border-radius: 8px;
+      border: 2px solid #888;
+    }
+
+    #codeInput::placeholder { font-size: 15px; }
+
+    /* Smaller font for Enter Access Code */
+    #accessSection h2 {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+    }
+
+    /* Style for filename display above access code */
+    #fileDisplay {
+      font-size: 1.3em;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #9fe3ff;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="accessSection">
+    <p id="fileDisplay"></p> <!-- NEW filename display -->
+    <h2>Enter Access Code</h2>
+    <input type="password" id="codeInput" placeholder="Enter code here" />
+    <br>
+    <button type="button" id="accessSubmit" style="padding:10px 40px; font-size:20px;">Login</button>
+
+    <span id="contactLink" style="margin-left:16px; font-size:14px; text-decoration:underline; cursor:pointer; color:#9fe3ff;">
+     Contact here! 
+    </span>
+
+
+    <p id="message" aria-live="polite"></p>
+    <br>
+    <p id="tipsArea">Loading tips...</p>
+  </div>
+
+  <div id="mainContent" style="display:none;">
+    <div id="reviewerSection">
+      <h1>Reviewer: Laws & Jurisprudence-(Part1)</h1>
+ 
+ 
+ 
+      <button onclick="showQuiz()">Start Quiz</button>
+    </div>
+
+    <div id="quizSection" style="display:none;">
+      <h1>Quiz: Laws & Jurisprudence-(Part1)</h1>
+      <p style="font-size: 15px; font-weight: 600; margin: 0;">Multiple-Choice Quiz (random items)</p>
+      <form id="quizForm"></form>
+
+      <div class="nav-buttons">
+        <button id="finishBtn">Score</button>
+        <button type="button" onclick="refreshQuiz()">Restart Quiz</button>
+        <button type="button" onclick="backToReviewer()">Reviewer</button>
+      </div>
+      <div id="result" class="highlight"></div>
+    </div>
+  </div>
+
+<!-- CONTACT POPUP MODAL -->
+<div id="contactModalBG" style="
+  display:none; 
+  position:fixed; 
+  top:0; left:0; 
+  width:100%; height:100%; 
+  background:rgba(0,0,0,0.6); 
+  z-index:1000;
+">
+  <div id="contactModal" style="
+    background:#ffffff; 
+    color:#000; 
+    width:90%; 
+    max-width:450px; 
+    margin:80px auto; 
+    padding:25px; 
+    border-radius:12px; 
+    box-shadow:0 0 15px rgba(0,0,0,0.5);
+  ">
+
+    <h2 style="margin-top:0; font-size:22px; text-align:center;">
+      Fill-in with your details here. <br>I'll contact you shortly!
+    </h2>
+
+    <label>Name:</label>
+    <input id="c_name" type="text" style="width:100%; padding:8px; margin-bottom:10px;">
+
+    <label>Contact No.:</label>
+    <input id="c_contact" type="text" style="width:100%; padding:8px; margin-bottom:10px;">
+
+    <label>Social Media Account:</label>
+    <input id="c_social" type="text" style="width:100%; padding:8px; margin-bottom:10px;">
+
+    <label>Request / Comment:</label>
+    <textarea id="c_request" style="width:100%; padding:8px; margin-bottom:10px; height:80px;"></textarea>
+
+    <button id="c_submit" style="
+      width:100%; padding:10px; 
+      background:#007BFF; color:#fff; border:none; border-radius:6px;
+      margin-top:10px; font-size:18px;
+    ">Submit</button>
+
+    <button id="c_close" style="
+      width:100%; padding:10px; 
+      background:#444; color:#fff; border:none; border-radius:6px;
+      margin-top:10px; font-size:18px;
+    ">Close</button>
+<!--
+    <p style="margin-top:20px; font-size:20px; text-align:center; color:#333;">
+      or you can contact this messenger: <b>@Rekz Banz</b>
+    </p>
+-->
+
+  </div>
+</div>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  // ===== Display filename on login page =====
+  const quizTitleEl = document.querySelector("#quizSection h1");
+  const displayFileName = quizTitleEl ? quizTitleEl.textContent.replace("Quiz: ", "").trim() : "index.html";
+  const fileDisplay = document.getElementById("fileDisplay");
+  if (fileDisplay) fileDisplay.textContent = displayFileName;
+
+  // ===== SETTINGS =====
+  const BIN_URL_CODE = "https://api.jsonbin.io/v3/b/6912958fd0ea881f40e0cafc/latest";
+  const BIN_URL_TIPS = "https://api.jsonbin.io/v3/b/68f1b652ae596e708f180d5d/latest";
+  const MASTER_KEY_CODE = "$2a$10$CvK4w8DTXZ1//5H1cpGQIerIT8Kzvk0FQHosdNm.XS0Q9n6sMmaf6";
+  const MASTER_KEY_TIPS = "$2a$10$CvK4w8DTXZ1//5H1cpGQIerIT8Kzvk0FQHosdNm.XS0Q9n6sMmaf6";
+
+  // === LOGGER BIN (Access Log) ===
+  const BIN_URL_LOG = "https://api.jsonbin.io/v3/b/6911a123d0ea881f40df102a";
+  const MASTER_KEY_LOG = MASTER_KEY_CODE;
+
+  // === SCORE LOG BIN (New) ===
+  const BIN_URL_SCORE = "https://api.jsonbin.io/v3/b/6912985cd0ea881f40e0cf7c";
+  const MASTER_KEY_SCORE = MASTER_KEY_CODE;
+
+  // ===== ELEMENTS =====
+  const accessSection = document.getElementById("accessSection");
+  const mainContent = document.getElementById("mainContent");
+  const codeInput = document.getElementById("codeInput");
+  const accessSubmit = document.getElementById("accessSubmit");
+  const message = document.getElementById("message");
+  const tipsArea = document.getElementById("tipsArea");
+
+// ===============================
+// CONTACT MODAL LOGIC (WORKING)
+// ===============================
+
+// open modal
+const contactLink = document.getElementById("contactLink");
+const contactBG = document.getElementById("contactModalBG");
+const contactClose = document.getElementById("c_close");
+const contactSubmit = document.getElementById("c_submit");
+
+if (contactLink && contactBG) {
+  contactLink.addEventListener("click", () => {
+    contactBG.style.display = "block";
+  });
+}
+
+if (contactClose && contactBG) {
+  contactClose.addEventListener("click", () => {
+    contactBG.style.display = "none";
+  });
+}
+// ===============================
+// CONTACT SUBMISSION SAVE LOGIC
+// ===============================
+const BIN_CONTACT_LOG = "https://api.jsonbin.io/v3/b/69146372d0ea881f40e3989e";
+const MASTER_KEY_CONTACT = MASTER_KEY_CODE;
+
+if (contactSubmit) {
+  contactSubmit.addEventListener("click", async () => {
+    const name = document.getElementById("c_name").value.trim();
+    const contact = document.getElementById("c_contact").value.trim();
+    const social = document.getElementById("c_social").value.trim();
+    const request = document.getElementById("c_request").value.trim();
+
+    if (!name || !contact || !request) {
+      alert("Please fill out name, contact, and request/comment.");
+      return;
+    }
+
+    const quizTitleElLocal = document.querySelector("#quizSection h1");
+    const fileName = quizTitleElLocal
+      ? quizTitleElLocal.textContent.replace("Quiz: ", "").trim()
+      : "index.html";
+
+    const deviceInfo = await getDeviceInfo();
+
+    try {
+      const getRes = await fetch(`${BIN_CONTACT_LOG}/latest`, {
+        headers: { "X-Master-Key": MASTER_KEY_CONTACT }
+      });
+      const data = await getRes.json();
+      const logs = Array.isArray(data.record) ? data.record : [];
+
+      logs.push({
+        event: "Client Request",
+        request,
+        name,
+        contact,
+        social,
+        filename: fileName,
+        timestamp: new Date().toLocaleString(),
+        device: deviceInfo
+      });
+
+      await fetch(BIN_CONTACT_LOG, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Master-Key": MASTER_KEY_CONTACT
+        },
+        body: JSON.stringify(logs)
+      });
+
+      alert("Message sent!");
+      contactBG.style.display = "none";
+
+    } catch (err) {
+      alert("Error sending contact message.");
+      console.error(err);
+    }
+  });
+}
+
+
+
+  // ===== HELPERS =====
+  function findStringKey(obj, keyName) {
+    if (!obj || typeof obj !== "object") return undefined;
+    for (const k in obj) {
+      if (k.toLowerCase() === keyName.toLowerCase() && typeof obj[k] === "string") {
+        return obj[k];
+      }
+      const v = obj[k];
+      if (typeof v === "object") {
+        const nested = findStringKey(v, keyName);
+        if (nested) return nested;
+      }
+    }
+  }
+
+  async function getDeviceInfo() {
+    const uaData = navigator.userAgentData || {};
+    const ua = navigator.userAgent;
+    const platform = navigator.platform;
+    const language = navigator.language;
+    const screenResolution = `${window.screen.width}x${window.screen.height}`;
+    const browserVersion = uaData.brands
+      ? uaData.brands.map(b => `${b.brand} ${b.version}`).join(", ")
+      : ua;
+
+    // Determine general device type
+    const uaLower = ua.toLowerCase();
+    let deviceType = "desktop";
+    if (/mobi|iphone|android/i.test(uaLower)) {
+      deviceType = "mobile";
+    } else if (/tablet|ipad|nexus 7|nexus 10/i.test(uaLower)) {
+      deviceType = "tablet";
+    }
+
+    // Get approximate IP + region/country info (non-identifying)
+    let networkInfo = "Unavailable";
+    try {
+      const res = await fetch("https://ipapi.co/json/");
+      if (res.ok) {
+        const info = await res.json();
+        networkInfo = {
+          ip: info.ip,
+          city: info.city,
+          region: info.region,
+          country: info.country_name,
+          org: info.org
+        };
+      }
+    } catch {
+      networkInfo = "Network lookup failed";
+    }
+
+    // Optional: request geolocation with user consent
+    const location = await new Promise(resolve => {
+      if (!navigator.geolocation) return resolve("Geolocation not supported");
+      navigator.geolocation.getCurrentPosition(
+        pos => resolve({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy
+        }),
+        () => resolve("Permission denied or unavailable"),
+        { timeout: 5000 }
+      );
+    });
+
+    return {
+      ua,
+      browserVersion,
+      platform,
+      language,
+      screenResolution,
+      deviceType,
+      networkInfo,
+      location
+    };
+  }
+
+  async function saveLoginToJsonBin(codeUsed) {
+    try {
+      // get filename from quiz title h1
+      const quizTitleElLocal = document.querySelector("#quizSection h1");
+      const fileName = quizTitleElLocal ? quizTitleElLocal.textContent.replace("Quiz: ", "").trim() : "index.html";
+
+      const getRes = await fetch(`${BIN_URL_LOG}/latest`, {
+        headers: { "X-Master-Key": MASTER_KEY_LOG }
+      });
+      const data = await getRes.json();
+      const logs = Array.isArray(data.record) ? data.record : [];
+
+      const deviceInfo = await getDeviceInfo();
+
+      logs.push({
+        event: "Login Access",
+        accessCode: codeUsed,
+        filename: fileName,
+        timestamp: new Date().toLocaleString(),
+        device: deviceInfo
+      });
+
+      await fetch(BIN_URL_LOG, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Master-Key": MASTER_KEY_LOG
+        },
+        body: JSON.stringify(logs)
+      });
+
+      console.log(`✅ Login logged successfully (file: ${fileName}).`);
+    } catch (err) {
+      console.error("❌ Error logging to JSONBin:", err);
+    }
+  }
+
+  // ===== LOAD TIPS =====
+  async function loadTips() {
+    try {
+      const resp = await fetch(BIN_URL_TIPS, {
+        headers: { "X-Master-Key": MASTER_KEY_TIPS, "Content-Type": "application/json" }
+      });
+      const data = await resp.json();
+      const tipsText =
+        findStringKey(data, "tips") ||
+        "Tips: <br>Press Enter after typing the code.<br>Stay online when entering.<br>For help, contact messenger: @Rekz Banz";
+      tipsArea.innerHTML = tipsText;
+    } catch (err) {
+      console.error("Tips fetch error:", err);
+      tipsArea.innerHTML =
+        "Could not load page. Please check your internet connection.";
+    }
+  }
+  loadTips();
+
+  // === NEW FUNCTION: Save Quiz Score to JSONBin ===
+  async function saveScoreToJsonBin(score, total) {
+    try {
+      const quizTitleElLocal = document.querySelector("#quizSection h1");
+      const fileName = quizTitleElLocal ? quizTitleElLocal.textContent.replace("Quiz: ", "").trim() : "index.html";
+
+      const getRes = await fetch(`${BIN_URL_SCORE}/latest`, {
+        headers: { "X-Master-Key": MASTER_KEY_SCORE }
+      });
+      const data = await getRes.json();
+      const logs = Array.isArray(data.record) ? data.record : [];
+      const deviceInfo = await getDeviceInfo();
+
+      logs.push({
+        event: "Quiz Score",
+        score: `${score}/${total}`,
+        filename: fileName,
+        timestamp: new Date().toLocaleString(),
+        device: deviceInfo
+      });
+
+      await fetch(BIN_URL_SCORE, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Master-Key": MASTER_KEY_SCORE
+        },
+        body: JSON.stringify(logs)
+      });
+      console.log("✅ Quiz score saved to JSONBin successfully.");
+    } catch (err) {
+      console.error("❌ Error saving quiz score:", err);
+    }
+  }
+
+  // ===== LOCAL STORAGE =====
+  const fileName = window.location.pathname.split("/").pop() || "default";
+  const storageKey = "savedAccessCode_" + fileName.replace(/\W+/g, "_");
+  const savedCode = localStorage.getItem(storageKey);
+  if (savedCode) codeInput.value = savedCode;
+  codeInput.addEventListener("input", () =>
+    localStorage.setItem(storageKey, codeInput.value)
+  );
+
+  // ===== LOGIN HANDLER =====
+  codeInput.addEventListener("keyup", (e) => {
+    if (e.key === "Enter") accessSubmit.click();
+  });
+
+  accessSubmit.addEventListener("click", async () => {
+    const input = codeInput.value.trim();
+    if (!input) {
+      message.textContent = "Please enter the access code.";
+      return;
+    }
+
+    accessSubmit.disabled = true;
+    codeInput.disabled = true;
+    message.textContent = "Checking...";
+
+    try {
+      const resp = await fetch(BIN_URL_CODE, {
+        headers: { "X-Master-Key": MASTER_KEY_CODE, "Content-Type": "application/json" }
+      });
+
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+
+      const remoteCode =
+        findStringKey(data, "accessCode") ||
+        findStringKey(data, "code") ||
+        findStringKey(data, "access");
+
+      if (!remoteCode) {
+        message.textContent = "Access code not found in storage record.";
+        throw new Error("No accessCode in JSON");
+      }
+
+      if (input === remoteCode.trim()) {
+        accessSection.style.display = "none";
+        mainContent.style.display = "block";
+        message.textContent = "";
+        saveLoginToJsonBin(input); // <<== AUTO LOG TO JSONBIN
+        setTimeout(() => {
+          const btn = document.querySelector("#mainContent button");
+          if (btn) btn.focus();
+        }, 100);
+      } else {
+        message.textContent = "Wrong code. Please read to tips.";
+        localStorage.removeItem(storageKey);
+        accessSubmit.disabled = false;
+        codeInput.disabled = false;
+      }
+    } catch (err) {
+      console.error("Access fetch error:", err);
+      message.textContent = "Error fetching code. Check console for details.";
+      accessSubmit.disabled = false;
+      codeInput.disabled = false;
+    }
+  });
+
+  // ===== QUIZ LOGIC =====
+  const pool = [
+  
+  
+    {q: "Who are not exempt from criminal liability under RA No. 9344?", choices: ["Children 15 years old and below", "Children fifteen years old but below 18 who acted without discernment.", "Children fifteen years old but below 18 who acted with discernment.", "Children cannot fully care for themselves due to a mental disability."], correctIndex: 2},
+  {q: "Who shall issue permit to own, possess, sale and import chain saw?", choices: ["DILG", "Chief of PNP", "DENR", "President"], correctIndex: 2},
+  {q: "What is the concept of “conspiracy” under Philippine criminal law?", choices: ["When two or more persons agree to commit a crime.", "When a person acts alone but with criminal intent.", "When a person aids another in committing a crime.", "When a person commits a crime unintentionally."], correctIndex: 0},
+  {q: "XYZ a resident of the Province of AAA plans to manufacture, sell and distribute fireworks and other pyrotechnic devices, he asked your assistance if where he can file the application to acquire the license. What would be your advice?", choices: ["XYZ can file an application in the office of the PNP Chief.", "XYZ can file an application in the office of Provincial Director.", "XYZ can file an application in the office of the City Director.", "XYZ can file an application in the office of the DILG Director."], correctIndex: 1},
+  {q: "What is/are the firearm/s that can be registered by the citizens or juridical entities for ownership?", choices: ["Small Arms", "Light Weapon", "Class A Light Weapon", "Class B Light Weapon"], correctIndex: 0},
+  {q: "Maria is brought to the police station for questioning about a theft case. If you are the police investigator, which advice should NOT be given to her?", choices: ["Inform her she is not obligated to answer questions.", "Inform her she has the right to counsel during questioning.", "Inform her that if she has no lawyer, one will be provided.", "Advise her to confess so she can leave early.", "Inform her that silence can be used against her in court."], correctIndex: 3},
+  {q: "Which activity does NOT form part of the chain of custody procedure?", choices: ["Collecting the evidence sample", "Properly sealing the evidence", "Destroying the evidence", "Storing the evidence safely", "Documenting the handling of the evidence"], correctIndex: 2},
+  {q: "It means any person holding any public office in the Government of the Republic of the Philippines by virtue of an appointment, election or contract.", choices: ["Public employee", "Public officer", "Elected Public Official", "Any person"], correctIndex: 1},
+  {q: "Sandra issued a BDO Check to Carla with a face value of Php150,000.00. Upon presentation of the check at BDO-Divisoria, it bounced due to insufficient funds. Carla visited Police Station 1 and sought advice from Police Corporal Cardo Dalisay on the appropriate course of action. If you were Police Corporal Dalisay, what would be your advice in this situation?", choices: ["I will advise Carla to sue Sandra under BP 22.", "I will advise Carla to find a lawyer to send demand letter to Sandra.", "I will advise Carla to send a Notice of Dishonor to Sandra.", "I will advise Carla to send a text message to Sandra.", "All of the above."], correctIndex: 2},
+  {q: "Character evidence of the accused is generally inadmissible because:", choices: ["It is always irrelevant", "It may unfairly prejudice the court against him", "It proves guilt conclusively", "It is required only in civil cases", "It replaces object evidence"], correctIndex: 1},
+  {q: "What should be included in an analytical toxicology request?", choices: ["Suspected agents and dose", "Suspect’s confession", "Court trial date", "Witness list"], correctIndex: 0},
+  {q: "What is the primary goal of maintaining a chain of custody for evidence?", choices: ["To speed up the laboratory examination", "To safeguard the integrity of evidence from collection until presentation in court", "To immediately forward the evidence to the prosecutor", "To limit evidence storage to the police station", "To shorten the time needed for testing"], correctIndex: 1},
+  {q: "Evidence is admissible if it is?", choices: ["Relevant and competent", "Presented by a police officer", "Signed by the judge", "Based solely on circumstantial facts", "Supported by at least two witnesses"], correctIndex: 0},
+  {q: "What is/are the act/s regulated and controlled under RA No. 7183?", choices: ["Manufacture firecrackers and other pyrotechnic devices.", "Sale firecrackers and other pyrotechnic devices.", "Distribution firecrackers and other pyrotechnic devices.", "Use of firecrackers and other pyrotechnic devices.", "All"], correctIndex: 4},
+  {q: "Where should a complaint be filed if a Barangay Protection Order is violated by the respondent?", choices: ["Municipal Trial Court with jurisdiction over the barangay.", "Regional Trial Court with jurisdiction over the barangay.", "Court of Appeals.", "Supreme Court.", "Barangay Justice System."], correctIndex: 0},
+  {q: "EEE and GGG are drivers of YYY Company. They were hired by HHH to transport timber or forest products from the City of Y. While on the road, they were caught by the police officers conducting a checkpoint. If you were the station commander of the police officers who caught EEE and GGG, would you release the drivers?", choices: ["Yes, because they have documents to prove that they are legally transporting the forest products.", "Yes, because they are just drivers.", "No, because mere possession of timber or other forest products without the proper legal documents, even absent malice or criminal intent, is illegal.", "Yes, because transporting timber is allowed as long as it is within city limits.", "Yes, if the drivers promise to present proper documentation at a later time."], correctIndex: 2},
+  {q: "Which of the following describes the crime of robbery?", choices: ["Taking property through violence or intimidation", "Taking property in an office without authorization", "Taking property by misrepresentation", "Taking property by illegal possession"], correctIndex: 0},
+  {q: "Which record ensures accountability for everyone who handled evidence?", choices: ["Police duty roster", "Chain of custody form", "Court calendar", "Arrest report", "Patrol log"], correctIndex: 1},
+  {q: "In court, how can an analyst show evidence integrity?", choices: ["By guaranteeing quick results", "By confirming evidence was properly preserved", "By minimizing paperwork", "By submitting a digital photo", "By testifying that no one else except him/her had access to the evidence"], correctIndex: 1},
+  {q: "Which is NOT an exception to the hearsay rule?", choices: ["Dying declaration", "Part of res gestae", "Entries in official records", "Speculative opinions", "Declaration against interest"], correctIndex: 3},
+  {q: "Which of the following is not true under RA No. 9262?", choices: ["It is applicable to lesbian relationship.", "It is applicable even though the punishable acts took place after the parties’ relationship had ended.", "It is applicable to conspirator.", "Psychological Report is necessary in proving psychological violence.", "Psychological violence is an indispensable element of violation of Section 5(i) of R.A. No. 9262."], correctIndex: 3},
+  {q: "Which is TRUE if the investigating prosecutor recommends dismissal but his resolution is disapproved by the provincial or city prosecutor?", choices: ["The case is automatically closed.", "The complaint must be reinvestigated.", "The provincial or city prosecutor may file the information directly.", "The complainant must refile the case in court.", "The Secretary of Justice must approve first."], correctIndex: 2},
+  {q: "The Parol Evidence Rule states that:", choices: ["Original documents must always be presented", "Written agreements contain all terms, barring oral modification unless exceptions apply", "Oral agreements are superior to written ones", "Witnesses cannot testify in contract cases", "Documentary evidence is inadmissible if unsigned"], correctIndex: 1},
+  {q: "Which of the following is NOT a duty of the officer executing a warrant of arrest?", choices: ["Arrest the accused promptly", "Deliver the accused to the nearest police station or jail", "Inform the accused of the cause of arrest", "Summon assistance if needed", "Decide whether the accused is guilty or not"], correctIndex: 4},
+  {q: "Why do courts insist on strict observance of chain of custody rules?", choices: ["To make the judicial process faster", "To prevent wrongful convictions", "To cut down on paperwork in the trial", "To protect the reputation of the police", "To shorten trial duration"], correctIndex: 1},
+  {q: "What is bail as defined in Rule 114?", choices: ["A privilege granted only after conviction", "A security given for temporary release of a person in custody", "An order issued to detain an accused", "A court order dismissing the case provisionally"], correctIndex: 1},
+  {q: "Which of the following is/are NOT the consequence/s if a child in conflict with the law is found guilty of the crime charged under RA No. 9344?", choices: ["Automatic suspension of the sentence.", "Referred to diversion and integration program.", "Pay the civil liability as determined by the Court.", "Undergo appropriate preliminary investigation.", "Undergo counseling."], correctIndex: 3}
+
+
+  ];
+
+  function pickRandom(arr, n) {
+    const copy = [...arr];
+    const result = [];
+    while (result.length < n && copy.length > 0) {
+      const idx = Math.floor(Math.random() * copy.length);
+      result.push(copy.splice(idx, 1)[0]);
+    }
+    return result;
+  }
+
+  function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
+  function selectRandomChoices(item) {
+    const correctChoice = item.choices[item.correctIndex];
+    let others = item.choices.filter((_, idx) => idx !== item.correctIndex);
+    shuffleArray(others);
+    let selected = [correctChoice, ...others.slice(0, 4)];
+    shuffleArray(selected);
+    item.correctIndex = selected.indexOf(correctChoice);
+    item.choices = selected;
+  }
+
+  let quizItems = [];
+
+  window.showQuiz = function () {
+    document.getElementById("reviewerSection").style.display = "none";
+    document.getElementById("quizSection").style.display = "block";
+    buildQuiz();
+  };
+
+  window.backToReviewer = function () {
+    document.getElementById("quizSection").style.display = "none";
+    document.getElementById("reviewerSection").style.display = "block";
+    document.getElementById("quizForm").innerHTML = "";
+    document.getElementById("result").innerHTML = "";
+  };
+
+  window.refreshQuiz = function () {
+    document.getElementById("quizForm").innerHTML = "";
+    document.getElementById("result").innerHTML = "";
+    document.getElementById("finishBtn").disabled = false;
+    buildQuiz();
+  };
+
+  function buildQuiz() {
+    quizItems = pickRandom(pool, Math.min(20, pool.length));
+    const form = document.getElementById("quizForm");
+    form.innerHTML = "";
+    quizItems.forEach((item, i) => {
+      selectRandomChoices(item);
+      const div = document.createElement("div");
+      div.className = "question";
+      const q = document.createElement("p");
+      q.textContent = `${i + 1}. ${item.q}`;
+      div.appendChild(q);
+      item.choices.forEach((choice, idx) => {
+        const label = document.createElement("label");
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = `q${i}`;
+        radio.value = idx;
+        label.appendChild(radio);
+        label.appendChild(document.createTextNode(" " + choice));
+        div.appendChild(label);
+        div.appendChild(document.createElement("br"));
+      });
+      form.appendChild(div);
+    });
+  }
+
+  document.getElementById("finishBtn").addEventListener("click", async function () {
+    let score = 0;
+    const total = quizItems.length;
+    for (let i = 0; i < total; i++) {
+      const radios = document.querySelectorAll(`input[name="q${i}"]`);
+      let selected = -1;
+      radios.forEach(r => { if (r.checked) selected = parseInt(r.value); });
+      const div = document.getElementById("quizForm").children[i];
+      if (selected === quizItems[i].correctIndex) {
+        score++;
+        div.insertAdjacentHTML("beforeend", "<div class='correct'>✔ Correct</div>");
+      } else {
+        const correctAnswer = quizItems[i].choices[quizItems[i].correctIndex];
+        div.insertAdjacentHTML("beforeend", `<div class='wrong'>✘ Wrong. Correct: ${correctAnswer}</div>`);
+      }
+      radios.forEach(r => r.disabled = true);
+    }
+    document.getElementById("result").innerHTML = `<h2>Your Score: ${score} / ${total}</h2>`;
+    this.disabled = true;
+
+    // 🧠 Save score to JSONBin
+    await saveScoreToJsonBin(score, total);
+  });
+});
+</script>
+</body>
+</html>
+
+
