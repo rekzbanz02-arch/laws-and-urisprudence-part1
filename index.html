@@ -62,7 +62,24 @@
   <div id="accessSection">
     <p id="fileDisplay"></p> <!-- NEW filename display -->
     <h2>Enter Access Code</h2>
-    <input type="password" id="codeInput" placeholder="Enter code here" />
+    <div style="position:relative; display:inline-block;">
+      <input type="password" id="codeInput" placeholder="Enter code here"
+        style="padding-right:45px;">
+    
+      <span id="toggleEye"
+        style="
+          position:absolute;
+          right:12px;
+          top:50%;
+          transform:translateY(-50%);
+          cursor:pointer;
+          font-size:20px;
+          color:#9fe3ff;
+          user-select:none;
+        "
+      >👁️</span>
+    </div>
+    
     <br>
     <button type="button" id="accessSubmit" style="padding:10px 40px; font-size:20px;">Login</button>
 
@@ -158,6 +175,20 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+    // ===== SHOW / HIDE PASSWORD TOGGLE =====
+    const toggleEye = document.getElementById("toggleEye");
+  const codeInputEye = document.getElementById("codeInput");
+
+  toggleEye.addEventListener("click", () => {
+    if (codeInputEye.type === "password") {
+      codeInputEye.type = "text";
+      toggleEye.textContent = "🙈"; // hide icon
+    } else {
+      codeInputEye.type = "password";
+      toggleEye.textContent = "👁️"; // show icon
+    }
+  });
+
   // ===== Display filename on login page =====
   const quizTitleEl = document.querySelector("#quizSection h1");
   const displayFileName = quizTitleEl ? quizTitleEl.textContent.replace("Quiz: ", "").trim() : "index.html";
@@ -493,7 +524,7 @@ if (contactSubmit) {
           if (btn) btn.focus();
         }, 100);
       } else {
-        message.textContent = "Wrong code. Please read to tips.";
+        message.textContent = "Wrong code. Please refer to contact";
         localStorage.removeItem(storageKey);
         accessSubmit.disabled = false;
         codeInput.disabled = false;
@@ -510,7 +541,7 @@ if (contactSubmit) {
   const pool = [
   
   
-    {q: "Who are not exempt from criminal liability under RA No. 9344?", choices: ["Children 15 years old and below", "Children fifteen years old but below 18 who acted without discernment.", "Children fifteen years old but below 18 who acted with discernment.", "Children cannot fully care for themselves due to a mental disability."], correctIndex: 2},
+  {q: "Who are not exempt from criminal liability under RA No. 9344?", choices: ["Children 15 years old and below", "Children fifteen years old but below 18 who acted without discernment.", "Children fifteen years old but below 18 who acted with discernment.", "Children cannot fully care for themselves due to a mental disability."], correctIndex: 2},
   {q: "Who shall issue permit to own, possess, sale and import chain saw?", choices: ["DILG", "Chief of PNP", "DENR", "President"], correctIndex: 2},
   {q: "What is the concept of “conspiracy” under Philippine criminal law?", choices: ["When two or more persons agree to commit a crime.", "When a person acts alone but with criminal intent.", "When a person aids another in committing a crime.", "When a person commits a crime unintentionally."], correctIndex: 0},
   {q: "XYZ a resident of the Province of AAA plans to manufacture, sell and distribute fireworks and other pyrotechnic devices, he asked your assistance if where he can file the application to acquire the license. What would be your advice?", choices: ["XYZ can file an application in the office of the PNP Chief.", "XYZ can file an application in the office of Provincial Director.", "XYZ can file an application in the office of the City Director.", "XYZ can file an application in the office of the DILG Director."], correctIndex: 1},
@@ -644,8 +675,3 @@ if (contactSubmit) {
 </script>
 </body>
 </html>
-
-
-
-
-
